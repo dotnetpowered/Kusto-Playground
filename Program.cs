@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using Kusto.Language;
 using Kusto.Language.Symbols;
+using Kusto.Language.Syntax;
+using KustoPlayground.Pipeline;
 
 namespace KustoPlayground
 {
@@ -17,14 +20,41 @@ namespace KustoPlayground
 
             // create new globals with default database set
             var globals = GlobalState.Default.WithDatabase(database);
-            // (IReadOnlyList<ClusterSymbol> clusters, ClusterSymbol cluster, DatabaseSymbol database, IReadOnlyList<FunctionSymbol> functions, Dictionary<string, FunctionSymbol> functionMap, IReadOnlyList<FunctionSymbol> aggregates, Dictionary<string, FunctionSymbol> aggregateMap, IReadOnlyList<FunctionSymbol> plugins, Dictionary<string, FunctionSymbol> pluginMap, IReadOnlyList<OperatorSymbol> operators, Dictionary<OperatorKind, OperatorSymbol> operatorMap, IReadOnlyList<CommandSymbol> commands, Dictionary<string, CommandSymbol> commandMap, Dictionary<string, IReadOnlyList<CommandSymbol>> commandListMap, IReadOnlyList<ParameterSymbol> parameters);
+
             // parse query and perform semantic analysis
-            KustoCode query = KustoCode.ParseAndAnalyze("let dateTimeLowerBound = datetime(2017-01-21); T | project c = a + b, a | where a > 10.0 and c < 5", globals);
-            //var child = query.Syntax.GetChild(0);
-            //var expansion = query.Syntax.GetTokens();
-            var root = query.Syntax.Root;
-            var expansion = query.Syntax.GetExpansion();
-            Console.WriteLine(root);
+            KustoCode query = KustoCode.ParseAndAnalyze("T | project c = a + b, a | where a > 10.0 and c < 5", globals);
+ 
+
+            Console.WriteLine("Query: "+query.Text);
+
+            var diagnostics = query.GetDiagnostics();
+            if (diagnostics.Count > 0)
+            {
+                Console.WriteLine("Invalid query:");
+                foreach (var d in query.GetDiagnostics())
+                {
+                    Console.WriteLine(" * " + d.Message);
+                }
+            }
+            else
+            {
+                var root = query.Syntax.Root;
+                Console.WriteLine("Result Type:" + query.ResultType.Display);
+
+                //Console.WriteLine("Walking query elements");
+                //KustoUtility.ShowChildren(root, "");
+
+                Console.WriteLine("Processing expression into pipeline");
+                var pipeline = new List<IPipelineComponent>();
+                PipelineFactory.BuildPipeline(root, pipeline);
+
+                Console.WriteLine("Pipeline result:");
+                foreach (var component in pipeline)
+                {
+                    Console.WriteLine($" {component.GetType()}");
+                }
+
+            }
         }
     }
 }

@@ -8,4 +8,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.Kusto.Language" Version="9.0.7" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Pipeline\" />
+  </ItemGroup>
 </Project>
